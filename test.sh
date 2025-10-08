@@ -16,9 +16,8 @@ k15="test20_t2fl_visual"
 
 # 0  1   2  3
 # t1 t1c t2 fl
-checkpoint="/home/hehe/baby/4_3D/MCPL/pth/model.pth.tar"
-#checkpoint="/home/hehe/baby/4_3D/MCPL/trainSencondStep/retest_1_finetune2018_ClassContrast_875_599preModalContrast1task/model_1model_best_699.pth.tar"
-checkpoint=CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --checkpoint ${checkpoint} --exp_name ${k5}
+checkpoint="/home/.../model.pth.tar"
+checkpoint=CUDA_VISIBLE_DEVICES=0 python3 test.py  --checkpoint ${checkpoint} --exp_name ${k5}
 CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 1 2 --checkpoint ${checkpoint} --exp_name ${k1}
 CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 1 2 3 --checkpoint ${checkpoint} --exp_name ${k2}
 CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 2 3 --checkpoint ${checkpoint} --exp_name ${k3}
