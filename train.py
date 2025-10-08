@@ -23,7 +23,7 @@ from loss.dice import EDiceLoss_Val, memory_Loss  # 'No ET... for this patient' 
 from utils import AverageMeter, ProgressMeter, save_checkpoint, reload_ckpt_bis, \
     count_parameters, save_metrics, save_args_1, inference, post_trans, dice_metric, \
     dice_metric_batch
-from Unet_kmaxT_beforeMul_new import Unet_missing
+from Unet_kmaxT import Unet_missing
 from torch.cuda.amp import autocast as autocast
 from dataset.transforms import *
 from model.mask_utils import MaskEmbeeding1
@@ -557,4 +557,5 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = arguments.devices
     main(arguments)
+
 
