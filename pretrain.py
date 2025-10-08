@@ -1,5 +1,4 @@
 # GPU memory 14894M
-# start 250914  14:30  -> 9.15 16:30
 # 1path=only learn cluster center
 # 2path=cross transformer learn both cluster center and pixFeature
 import argparse
@@ -40,7 +39,6 @@ parser.add_argument('--mdp', default=3, type=int, metavar='N',
                     help='number of data loading workers (default: 2).')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
 parser.add_argument('--epochs', default=600, type=int, metavar='N', help='number of total epochs to run')
-# parser.add_argument('-b', '--batch-size', default=1, type=int, metavar='N', help='mini-batch size (default: 1)')
 parser.add_argument('-b', '--batch-size', default=2, type=int, metavar='N', help='mini-batch size (default: 1)')
 
 parser.add_argument('--lr', '--learning-rate', default=3e-4, type=float, metavar='LR', help='initial learning rate',
@@ -58,7 +56,6 @@ parser.add_argument('--exp_name', default='pretrain2018', type=str, help='exp na
 
 parser.add_argument('--val', default=100, type=int, help="how often to perform validation step")
 parser.add_argument('--fold', default=0, type=int, help="Split number (0 to 4)")
-# parser.add_argument('--batch_size', default=1, type=int, help="Split number (0 to 4)")
 parser.add_argument('--batch_size', default=2, type=int, help="Split number (0 to 4)")
 
 parser.add_argument('--num_classes', type=int,
@@ -88,7 +85,7 @@ def main(args):
     ngpus = torch.cuda.device_count()
     print(f"Working with {ngpus} GPUs")
 
-    args.save_folder_1 = pathlib.Path(f"./PretrainPathMCPL_zscore_try/{args.exp_name}/model_1")
+    args.save_folder_1 = pathlib.Path(f"./your path/{args.exp_name}/model_1")
     args.save_folder_1.mkdir(parents=True, exist_ok=True)
     args.seg_folder_1 = args.save_folder_1 / "segs"
     args.seg_folder_1.mkdir(parents=True, exist_ok=True)
@@ -251,3 +248,4 @@ def main(args):
 if __name__ == '__main__':
     arguments = parser.parse_args()
     main(arguments)
+
