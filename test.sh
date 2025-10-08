@@ -14,8 +14,6 @@ k13="test20_t1ct2_visual"
 k14="test20_t1cfl_visual"
 k15="test20_t2fl_visual"
 
-# 0  1   2  3
-# t1 t1c t2 fl
 checkpoint="/home/.../model.pth.tar"
 checkpoint=CUDA_VISIBLE_DEVICES=0 python3 test.py  --checkpoint ${checkpoint} --exp_name ${k5}
 CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 1 2 --checkpoint ${checkpoint} --exp_name ${k1}
