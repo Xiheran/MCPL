@@ -27,8 +27,6 @@ Comprehensive experiments on the BraTS2018 and BraTS2020 datasets demonstrate th
 
 ### Download:
 
-* Pre-trained checkpoint [[14M](https://storage.googleapis.com/sfr-pcl-data-research/ALBEF/ALBEF.pth)] / [[4M](https://storage.googleapis.com/sfr-pcl-data-research/ALBEF/ALBEF_4M.pth)]
-* <a href="https://storage.googleapis.com/sfr-pcl-data-research/ALBEF/data.tar.gz"> Dataset json files for downstream tasks</a>
 
 ### Dataset: 
 > * <a href="https://www.kaggle.com/datasets/sanglequang/brats2018"> Brats 2018</a>
