@@ -1,6 +1,4 @@
 # GPU memory 14894M
-# 1path=only learn cluster center
-# 2path=cross transformer learn both cluster center and pixFeature
 import argparse
 import os
 import pathlib
@@ -23,7 +21,7 @@ from loss import EDiceLoss
 from utils import AverageMeter, ProgressMeter, save_checkpoint, reload_ckpt_bis, reload_ckpt, \
     count_parameters, save_metrics, save_args_1, inference, post_trans, dice_metric, \
     dice_metric_batch
-from model.Unet_kmaxT_beforeMul_new import Unet_missing
+from model.Unet import Unet_missing
 
 from torch.cuda.amp import autocast as autocast
 
@@ -248,4 +246,5 @@ def main(args):
 if __name__ == '__main__':
     arguments = parser.parse_args()
     main(arguments)
+
 
