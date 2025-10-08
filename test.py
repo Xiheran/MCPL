@@ -51,12 +51,7 @@ parser.add_argument('--wd', '--weight-decay', default=0, type=float,
                     metavar='W', help='weight decay (default: 0)',
                     dest='weight_decay')
 parser.add_argument('--devices', default='0', type=str, help='Set the CUDA_VISIBLE_DEVICES env var from this string')
-# parser.add_argument('--checkpoint', default='/home/hehe/baby/4_3D/MCPL/pth/model.pth.tar',
-#                     type=str,
-#                     help='Set the CUDA_VISIBLE_DEVICES env var from this string')
-parser.add_argument('--checkpoint', default='/home/hehe/baby/4_3D/MCPL/trainSencondStep'
-                                            '/retest_1_finetune2018_ClassContrast_875_599preModalContrast1task'
-                                            '/model_1model_best_699.pth.tar',
+parser.add_argument('--checkpoint', default='',
                     type=str,
                     help='Set the CUDA_VISIBLE_DEVICES env var from this string')
 
@@ -346,3 +341,4 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = arguments.devices
     main(arguments)
+
