@@ -26,7 +26,7 @@ from utils import AverageMeter, ProgressMeter, save_checkpoint, reload_ckpt_bis,
     dice_metric_batch, reload_ckpt, save_every_metrics, generate_segmentations_monai_withlabel, \
     generate_segmentations_monai
 
-from model.Unet_kmaxT_beforeMul_new import Unet_missing
+from model.Unet_kmaxT import Unet_missing
 
 from torch.cuda.amp import autocast as autocast
 
@@ -341,4 +341,5 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = arguments.devices
     main(arguments)
+
 
