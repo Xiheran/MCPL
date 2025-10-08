@@ -1,6 +1,4 @@
-# tensorboard --logdir=/home/hehe/baby/4_3D/m3ae-main/runs/test1/model_1
-#  watch -n 1 nvidia-smi
-#  start GPU 14881, 2024 9 15 17:00 210s?
+#  start GPU 14881
 import argparse
 import os
 import pathlib
@@ -25,12 +23,8 @@ from loss.dice import EDiceLoss_Val, memory_Loss  # 'No ET... for this patient' 
 from utils import AverageMeter, ProgressMeter, save_checkpoint, reload_ckpt_bis, \
     count_parameters, save_metrics, save_args_1, inference, post_trans, dice_metric, \
     dice_metric_batch
-
-# from model.Unet_kmaxT_2tasks import Unet_missing
-from Unet_kmaxT_beforeMul_new_increase import Unet_missing
-
+from Unet_kmaxT_beforeMul_new import Unet_missing
 from torch.cuda.amp import autocast as autocast
-
 from dataset.transforms import *
 from model.mask_utils import MaskEmbeeding1
 
@@ -48,7 +42,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='man
 
 parser.add_argument('--patch_shape', default=128, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('--epochs', default=1000, type=int, metavar='N', help='number of total epochs to run')
+parser.add_argument('--epochs', default=600, type=int, metavar='N', help='number of total epochs to run')
 parser.add_argument('-b', '--batch-size', default=2, type=int, metavar='N', help='mini-batch size (default: 1)')
 parser.add_argument('--lr', '--learning-rate', default=3e-4, type=float, metavar='LR', help='initial learning rate',
                     dest='lr')
@@ -146,7 +140,7 @@ def main(args):
     print(f"Working with {ngpus} GPUs")
 
     # runs_Kmax/test4/model_1
-    args.save_folder_1 = pathlib.Path(f"trainSencondStep_segheadiscossim_try/{args.exp_name}/model_1")
+    args.save_folder_1 = pathlib.Path(f"trainSencondStep/{args.exp_name}/model_1")
     args.save_folder_1.mkdir(parents=True, exist_ok=True)
     args.seg_folder_1 = args.save_folder_1 / "segs"
     args.seg_folder_1.mkdir(parents=True, exist_ok=True)
@@ -154,30 +148,19 @@ def main(args):
     save_args_1(args)
 
     t_writer_1 = SummaryWriter(str(args.save_folder_1))
-    # args.checkpoint_folder = pathlib.Path(f"/apdcephfs/share_1290796/lh/brats/runs/{args.exp_name}/model_1")
-
     print(args)
     CC_modalities = 4
     CC_classes = 3
     model_1 = Unet_missing(input_shape=[128, 128, 128], init_channels=16, out_channels=3, mdp=3, pre_train=False,
                            deep_supervised=args.deep_supervised, patch_shape=args.patch_shape,
                            CC_modalities=CC_modalities, CC_classes=CC_classes)
-
-    # args.checkpoint = 'runs_Kmax_2tasks/finetuneClassContrast_875_599preNoContrast1task/model_1model_best_699.pth.tar'
-    # 反复学
-    # args.checkpoint = 'pth/model.pth.tar'
-
-    args.checkpoint = 'PretrainPathMCPL_zscore/pretrain2018/model_1model_best_599.pth.tar'
+    args.checkpoint = './your path/model.pth.tar'
     ck = torch.load(args.checkpoint, map_location=torch.device('cpu'))
-    model_1 = nn.DataParallel(model_1)
     model_1.load_state_dict(ck['state_dict'], strict=False)
     model_1 = model_1.module
     model_1 = nn.DataParallel(model_1)
     model_1 = model_1.cuda()
     model_1.module.raw_input = model_1.module.raw_input.cpu()
-
-    print(f"total number of trainable parameters {count_parameters(model_1)}")
-
     model_file = args.save_folder_1 / "model.txt"
     with model_file.open("w") as f:
         print(model_1, file=f)
@@ -192,17 +175,9 @@ def main(args):
     params = model_1.parameters()
     limage = []
     ori_para = []
-    # for i, [name, param] in enumerate(model_1.named_parameters()):
-    #     if 0 <= i <= 80:
-    #         param.requires_grad = False
-    #         print(i, name)
-    #     else:
-    #         ori_para.append(param)
-    #         print(name)
     for pname, p in model_1.named_parameters():
         if pname.endswith("limage"):
             limage.append(p)
-            # ori_para.append(p)
         else:
             ori_para.append(p)
 
@@ -218,26 +193,17 @@ def main(args):
             normalisation='zscore'
         )
         print(_labeled_name_list)
-    # else:
-    #     full_train_dataset, l_val_dataset, _labeled_name_list = get_datasets_train(
-    #     args.seed,
-    #     fold_number=args.fold,
-    #     part=args.part,
-    #     normalisation='zscore')
+
     train_loader = torch.utils.data.DataLoader(full_train_dataset, batch_size=1, shuffle=True,
                                                num_workers=args.workers, pin_memory=True, drop_last=True)
     val_loader = torch.utils.data.DataLoader(l_val_dataset, batch_size=1, shuffle=False,
                                              pin_memory=True, num_workers=args.workers)
-    # bench_loader = torch.utils.data.DataLoader(bench_dataset, batch_size=1, num_workers=args.workers)
-
     print("Train dataset number of batch:", len(train_loader))
     print("Val dataset number of batch:", len(val_loader))
-    # print("Bench Test dataset number of batch:", len(bench_loader))
-
+    
     # Actual Train loop
     best_1 = 0.0
     patients_perf = []
-
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
 
     best_loss = 10000000
@@ -256,8 +222,6 @@ def main(args):
                 scheduler.step()
             continue
         try:
-
-            # step_lr = lr_schedule(optimizer, epoch)
             # do_epoch for one epoch
             ts = time.perf_counter()
 
@@ -579,21 +543,13 @@ def step(data_loader, model, args, criterion: EDiceLoss_Val, metric, epoch, writ
         end = time.perf_counter()
         # Display progress
         progress.display(i)
-
     save_metrics(epoch, metrics, writer, epoch, False, save_folder)
     writer.add_scalar(f"SummaryLoss/val", losses.avg, epoch)
-
     dice_values = dice_metric.aggregate().item()
     dice_metric.reset()
     dice_metric_batch.reset()
-
-    # print(metrics)
     metrics = list(zip(*metrics))
     metrics = [np.nanmean(torch.tensor(dice, device="cpu").numpy()) for dice in metrics]
-    # labels = ("ET", "TC", "WT")
-    # metrics = {key: value for key, value in zip(labels, metrics)}
-    # print(metrics)
-
     return losses.avg, np.nanmean(metrics)  # , metrics
 
 
@@ -601,3 +557,4 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = arguments.devices
     main(arguments)
+
