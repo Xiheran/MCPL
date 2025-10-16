@@ -1,46 +1,19 @@
-"""
-Copyright (2023) Bytedance Ltd. and/or its affiliates
-
-Licensed under the Apache License, Version 2.0 (the "License"); 
-you may not use this file except in compliance with the License. 
-You may obtain a copy of the License at 
-
-    http://www.apache.org/licenses/LICENSE-2.0 
-
-Unless required by applicable law or agreed to in writing, software 
-distributed under the License is distributed on an "AS IS" BASIS, 
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-See the License for the specific language governing permissions and 
-limitations under the License.
-
-Reference: https://github.com/google-research/deeplab2/blob/main/model/transformer_decoder/kmax.py
-"""
-
 from typing import List
 import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.cuda.amp import autocast
-
 from timm.models.layers import DropPath
-# from timm.models.layers import trunc_normal_tf_ as trunc_normal_
-
-# I changed to
 from timm.models.layers import trunc_normal_
-
 from detectron2.config import configurable
 from detectron2.utils.registry import Registry
-
 from .kmax_pixel_decoder import get_norm, ConvBN
-
 import math
 
 TRANSFORMER_DECODER_REGISTRY = Registry("TRANSFORMER_MODULE")
 TRANSFORMER_DECODER_REGISTRY.__doc__ = """
-Registry for transformer module.
-"""
-
-
+# Registry for transformer module.
+# """
 def build_transformer_decoder(cfg, input_shape_from_backbone):
     """
     Build a instance embedding branch from `cfg.MODEL.KMAX_DEEPLAB.TRANS_DEC.NAME`.
@@ -49,7 +22,6 @@ def build_transformer_decoder(cfg, input_shape_from_backbone):
     return TRANSFORMER_DECODER_REGISTRY.get(name)(cfg, input_shape_from_backbone)
 
 
-# https://github.com/google-research/deeplab2/blob/7a01a7165e97b3325ad7ea9b6bcc02d67fecd07a/model/decoder/max_deeplab.py#L60
 def add_bias_towards_void(query_class_logits, void_prior_prob=0.9):
     class_logits_shape = query_class_logits.shape
     init_bias = [0.0] * class_logits_shape[-1]
@@ -58,7 +30,6 @@ def add_bias_towards_void(query_class_logits, void_prior_prob=0.9):
     return query_class_logits + torch.tensor(init_bias, dtype=query_class_logits.dtype).to(query_class_logits)
 
 
-# https://github.com/google-research/deeplab2/blob/7a01a7165e97b3325ad7ea9b6bcc02d67fecd07a/model/layers/dual_path_transformer.py#L41
 class AttentionOperation(nn.Module):
     def __init__(self, channels_v, num_heads):
         super().__init__()
@@ -84,7 +55,6 @@ class AttentionOperation(nn.Module):
         return retrieved_value
 
 
-# https://github.com/google-research/deeplab2/blob/main/model/kmax_deeplab.py#L32
 class kMaXPredictor(nn.Module):
     def __init__(self, in_channel_pixel, in_channel_query, num_classes=133 + 1, nums_q=256):
         super().__init__()
@@ -112,32 +82,21 @@ class kMaXPredictor(nn.Module):
         pixel_space_feature = self._pixel_space_head_conv1bnact(pixel_space_feature)
         pixel_space_feature = self._pixel_space_head_last_convbn(pixel_space_feature)  # 256->128
         pixel_space_normalized_feature = F.normalize(pixel_space_feature, p=2, dim=1)
-
-        # cluster_class_logits = self._transformer_class_head(class_embeddings).permute(0, 2, 1).contiguous()
-        # cluster_class_logits = add_bias_towards_void(cluster_class_logits)
         cluster_mask_kernel = add_bias_towards_void(mask_embeddings)
         cluster_mask_kernel = self._transformer_mask_head(cluster_mask_kernel)
         mask_logits = torch.einsum('bchwd,bcn->bnhwd',
                                    pixel_space_normalized_feature, cluster_mask_kernel)  # [b 128 16 16 16]  [b 128 12]
-        # mask_logits = self._pixel_space_mask_batch_norm(mask_logits.unsqueeze(dim=1)).squeeze(dim=1)
-        # pixel_space_normalized_feature=torch.ones_like(pixel_space_normalized_feature)
-        # mask_logits=torch.ones_like(mask_logits)
-        #
-        # feature = torch.einsum('bchwd,bmhwd->bchwd',
-        #                            pixel_space_normalized_feature, mask_logits)   # ori
-        # feature = torch.einsum('bcn,bnhwd->bchwd',                                # 7-27
-        #                            cluster_mask_kernel, mask_logits)  # bad [2 128 12] [2 12 16 16 16]->[2 128 16 16 16]
+      
         mask_logits = self._pixel_space_mask_batch_norm(mask_logits)
 
         return {
-            # 'class_logits': cluster_class_logits,
             'mask_logits': mask_logits,
             'pixel_feature': pixel_space_normalized_feature
         }
 
 
 class kMaXPredictor_final(nn.Module):
-    def __init__(self, in_channel_pixel, in_channel_query, num_classes=133 + 1, nums_q=256):
+    def __init__(self, in_channel_pixel, in_channel_query, num_classes=134, nums_q=256):
         super().__init__()
         self._pixel_space_head_conv0bnact = ConvBN(in_channel_pixel, in_channel_pixel, kernel_size=5,
                                                    groups=in_channel_pixel, padding=2, bias=False,
@@ -149,36 +108,21 @@ class kMaXPredictor_final(nn.Module):
 
         self._transformer_mask_head = ConvBN(in_channel_query, 128, kernel_size=1, bias=False, norm='1b', act=None,
                                              conv_type='1d')
-        # self._transformer_class_head = ConvBN(nums_q, num_classes, kernel_size=1, norm=None, act=None,
-        #                                       conv_type='1d')
-        # trunc_normal_(self._transformer_class_head.conv.weight, std=0.01)
-
-        # self._pixel_space_mask_batch_norm = get_norm('bn', channels=1)
-        # self._pixel_space_mask_batch_norm = get_norm('bn', channels=nums_q)
         self._pixel_space_mask_batch_norm = get_norm('bn', channels=nums_q)
 
         nn.init.constant_(self._pixel_space_mask_batch_norm.weight, 0.1)
 
     def forward(self, mask_embeddings, class_embeddings, pixel_feature):
-        # mask_embeddings/class_embeddings: B x C x N  [B 16 256]
-        # pixel feature: B x C x H x W   [B 16 224 224]
         pixel_space_feature = self._pixel_space_head_conv0bnact(pixel_feature)         # n->n n=16
         pixel_space_feature = self._pixel_space_head_conv1bnact(pixel_space_feature)   # n->256
         pixel_space_feature = self._pixel_space_head_last_convbn(pixel_space_feature)  # 256->128
         pixel_space_normalized_feature = F.normalize(pixel_space_feature, p=2, dim=1)
-
-        # cluster_class_logits = self._transformer_class_head(class_embeddings).permute(0, 2, 1).contiguous()
-        # cluster_class_logits = add_bias_towards_void(cluster_class_logits)
         cluster_mask_kernel = self._transformer_mask_head(mask_embeddings)  # n->128 class=9/4
-        # cluster_mask_kernel = self._transformer_class_head(cluster_mask_kernel.permute(0, 2, 1)).\
-        #     permute(0, 2, 1).contiguous()  # 64->4
         cluster_mask_kernel = add_bias_towards_void(cluster_mask_kernel)    # ? class=4
         cluster_mask_kernel = F.normalize(cluster_mask_kernel, p=2, dim=1)  # [B channel=128 class=4] our
 
         mask_logits = torch.einsum('bchw,bcn->bnhw',
                                    pixel_space_normalized_feature, cluster_mask_kernel)
-        # mask_logits = self._pixel_space_mask_batch_norm(mask_logits.unsqueeze(dim=1)).squeeze(dim=1)
-        # print(mask_logits.max(),pixel_space_normalized_feature.max(),cluster_mask_kernel.max())
         mask_logits = self._pixel_space_mask_batch_norm(mask_logits)
 
         return {
@@ -187,44 +131,6 @@ class kMaXPredictor_final(nn.Module):
             'pixel_feature': pixel_space_normalized_feature}
 
 
-# class kMaXPredictor_multi(nn.Module):
-#     def __init__(self, in_channel_pixel, number_q=256, queries_channelnum=256):
-#         super().__init__()
-#         self._pixel_space_head_conv0bnact = ConvBN(in_channel_pixel, in_channel_pixel, kernel_size=5,
-#                                                    groups=in_channel_pixel, padding=2, bias=False,
-#                                                    norm='bn', act='gelu', conv_init='xavier_uniform')
-#         self._pixel_space_head_conv1bnact = ConvBN(in_channel_pixel, 256, kernel_size=1, bias=False, norm='bn',
-#                                                    act='gelu')
-#         self._pixel_space_head_last_convbn = ConvBN(256, 128, kernel_size=1, bias=True, norm='bn', act=None)
-#         trunc_normal_(self._pixel_space_head_last_convbn.conv.weight, std=0.01)
-#
-#         self._transformer_mask_head = ConvBN(queries_channelnum, 128, kernel_size=1, bias=False, norm='1b', act=None,
-#                                              conv_type='1d')
-#         self._pixel_space_mask_batch_norm = get_norm('bn', channels=number_q)
-#
-#         # nn.init.constant_(self._pixel_space_mask_batch_norm.weight, 0.1)
-#
-#     def forward(self, center, pixel_feature):
-#         # mask_embeddings/class_embeddings: B x C x N  [B 16 256]
-#         # pixel feature: B x C x H x W   [B 16 224 224]
-#         pixel_space_feature = self._pixel_space_head_conv0bnact(pixel_feature)
-#         pixel_space_feature = self._pixel_space_head_conv1bnact(pixel_space_feature)
-#         pixel_space_feature = self._pixel_space_head_last_convbn(pixel_space_feature)  # 256->128
-#         pixel_space_normalized_feature = F.normalize(pixel_space_feature, p=2, dim=1)
-#
-#         cluster_mask_kernel = self._transformer_mask_head(center)
-#         cluster_mask_kernel_normalized_feature = F.normalize(cluster_mask_kernel, p=2, dim=2)
-#         mask_logits = torch.einsum('bchw,bcn->bnhw',
-#                                    pixel_space_feature, cluster_mask_kernel_normalized_feature)
-#         # mask_logits = self._pixel_space_mask_batch_norm(mask_logits.unsqueeze(dim=1)).squeeze(dim=1)
-#         # print(mask_logits.max(),pixel_space_normalized_feature.max(),cluster_mask_kernel.max())
-#         # print(pixel_space_feature.max(), cluster_mask_kernel.max())
-#         mask_logits = self._pixel_space_mask_batch_norm(mask_logits)
-#
-#         return mask_logits
-
-
-# https://github.com/google-research/deeplab2/blob/7a01a7165e97b3325ad7ea9b6bcc02d67fecd07a/model/layers/dual_path_transformer.py#L107
 class kMaXTransformerLayer(nn.Module):
     def __init__(
             self,
@@ -242,7 +148,6 @@ class kMaXTransformerLayer(nn.Module):
     ):
         super().__init__()
 
-        # self._num_classes = num_classes
         self._num_heads = num_heads
         self._bottleneck_channels = int(round(base_filters * bottleneck_expansion))  # 256
         self._total_key_depth = int(round(base_filters * key_expansion))  # 128
@@ -456,157 +361,4 @@ class SemanticPredictor(nn.Module):
         x = self.conv_block_1(x)
         x = self.final_conv(x)
         return x
-
-
-# @TRANSFORMER_DECODER_REGISTRY.register()
-# class kMaXTransformerDecoder(nn.Module):
-#
-#     @configurable
-#     def __init__(
-#             self,
-#             *,
-#             dec_layers: List[int],
-#             in_channels: List[int],
-#             num_classes: int,
-#             num_queries: int,
-#             drop_path_prob: float,
-#             add_aux_semantic_pred: bool,
-#             use_aux_semantic_decoder: bool,
-#             input_shape_from_backbone,
-#     ):
-#         """
-#         NOTE: this interface is experimental.
-#         Args:
-#         """
-#         super().__init__()
-#
-#         # define Transformer decoder here
-#         self._kmax_transformer_layers = nn.ModuleList()
-#         self._num_blocks = dec_layers
-#         os2channels = {32: in_channels[0], 16: in_channels[1], 8: in_channels[2]}
-#
-#         for index, output_stride in enumerate([32, 16, 8]):
-#             for _ in range(self._num_blocks[index]):
-#                 self._kmax_transformer_layers.append(
-#                     kMaXTransformerLayer(num_classes=num_classes + 1,
-#                                          in_channel_pixel=os2channels[output_stride],
-#                                          in_channel_query=256,
-#                                          nums_q=256,
-#                                          base_filters=128,
-#                                          num_heads=8,
-#                                          bottleneck_expansion=2,
-#                                          key_expansion=1,
-#                                          value_expansion=2,
-#                                          drop_path_prob=drop_path_prob)
-#                 )
-#
-#         self._num_queries = num_queries
-#         # learnable query features
-#         self._cluster_centers = nn.Embedding(256, num_queries)
-#         trunc_normal_(self._cluster_centers.weight, std=1.0)
-#
-#         self._class_embedding_projection = ConvBN(256, 256, kernel_size=1, bias=False, norm='1b', act='gelu',
-#                                                   conv_type='1d')
-#
-#         self._mask_embedding_projection = ConvBN(256, 256, kernel_size=1, bias=False, norm='1b', act='gelu',
-#                                                  conv_type='1d')
-#
-#         self._predcitor = kMaXPredictor(in_channel_pixel=in_channels[-1],
-#                                         in_channel_query=256, num_classes=num_classes + 1, nums_q=256)
-#
-#         self._add_aux_semantic_pred = add_aux_semantic_pred
-#         self._use_aux_semantic_decoder = use_aux_semantic_decoder
-#         if add_aux_semantic_pred:
-#             if use_aux_semantic_decoder:
-#                 self._auxiliary_semantic_predictor = SemanticPredictor(
-#                     in_channels=input_shape_from_backbone['res5'].channels,
-#                     os8_channels=input_shape_from_backbone['res3'].channels,
-#                     os4_channels=input_shape_from_backbone['res2'].channels,
-#                     # +1 for void.
-#                     num_classes=num_classes + 1)
-#             else:
-#                 self._auxiliary_semantic_predictor = nn.Sequential(
-#                     ConvBN(input_shape_from_backbone['res5'].channels, input_shape_from_backbone['res5'].channels,
-#                            groups=input_shape_from_backbone['res5'].channels, kernel_size=5, padding=2, bias=False,
-#                            norm='bn', act='gelu', conv_init='xavier_uniform'),
-#                     ConvBN(input_shape_from_backbone['res5'].channels, 256, kernel_size=1, bias=False, norm='bn',
-#                            act='gelu'),
-#                     ConvBN(256, num_classes, kernel_size=1, norm=None, act=None)
-#                 )
-#                 trunc_normal_(self._auxiliary_semantic_predictor[2].conv.weight, std=0.01)
-#
-#     @classmethod
-#     def from_config(cls, cfg, input_shape_from_backbone):
-#         ret = {}
-#         ret["dec_layers"] = cfg.MODEL.KMAX_DEEPLAB.TRANS_DEC.DEC_LAYERS
-#         ret["in_channels"] = cfg.MODEL.KMAX_DEEPLAB.TRANS_DEC.IN_CHANNELS
-#         ret["num_classes"] = cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES
-#         ret["num_queries"] = cfg.MODEL.KMAX_DEEPLAB.TRANS_DEC.NUM_OBJECT_QUERIES
-#         ret["drop_path_prob"] = cfg.MODEL.KMAX_DEEPLAB.TRANS_DEC.DROP_PATH_PROB
-#         ret["add_aux_semantic_pred"] = (cfg.MODEL.KMAX_DEEPLAB.AUX_SEMANTIC_WEIGHT > 0)
-#         ret["use_aux_semantic_decoder"] = cfg.MODEL.KMAX_DEEPLAB.USE_AUX_SEMANTIC_DECODER
-#         ret["input_shape_from_backbone"] = input_shape_from_backbone
-#         return ret
-#
-#     def forward(self, x, panoptic_features, semantic_features):
-#         B = x[0].shape[0]
-#         cluster_centers = self._cluster_centers.weight.unsqueeze(0).repeat(B, 1, 1)  # B x C x L
-#
-#         current_transformer_idx = 0
-#
-#         predictions_class = []
-#         predictions_mask = []
-#         predictions_pixel_feature = []
-#
-#         for i, feat in enumerate(x):
-#             for _ in range(self._num_blocks[i]):
-#                 cluster_centers, prediction_result = self._kmax_transformer_layers[current_transformer_idx](
-#                     pixel_feature=feat, query_feature=cluster_centers
-#                 )
-#                 predictions_class.append(prediction_result['class_logits'])
-#                 predictions_mask.append(prediction_result['mask_logits'])
-#                 predictions_pixel_feature.append(prediction_result['pixel_feature'])
-#                 current_transformer_idx += 1
-#
-#         class_embeddings = self._class_embedding_projection(cluster_centers)
-#         mask_embeddings = self._mask_embedding_projection(cluster_centers)
-#
-#         # Final predictions.
-#         prediction_result = self._predcitor(
-#             class_embeddings=class_embeddings,
-#             mask_embeddings=mask_embeddings,
-#             pixel_feature=panoptic_features,
-#         )
-#         predictions_class.append(prediction_result['class_logits'])
-#         predictions_mask.append(prediction_result['mask_logits'])
-#         predictions_pixel_feature.append(prediction_result['pixel_feature'])
-#
-#         out = {
-#             'pred_logits': predictions_class[-1],
-#             'pred_masks': predictions_mask[-1],
-#             'pixel_feature': predictions_pixel_feature[-1],
-#             'aux_outputs': self._set_aux_loss(
-#                 predictions_class, predictions_mask, predictions_pixel_feature
-#             ),
-#         }
-#
-#         if self._add_aux_semantic_pred and self.training:
-#             semantic_features, low_features_os8, low_features_os4 = semantic_features
-#             if self._use_aux_semantic_decoder:
-#                 aux_semantic_prediction = self._auxiliary_semantic_predictor(
-#                     x=semantic_features, low_features_os8=low_features_os8, low_features_os4=low_features_os4)
-#             else:
-#                 aux_semantic_prediction = self._auxiliary_semantic_predictor(semantic_features)
-#             out.update({'aux_semantic_pred': aux_semantic_prediction, })
-#         return out
-#
-#     @torch.jit.unused
-#     def _set_aux_loss(self, outputs_class, outputs_seg_masks, outputs_pixel_feature):
-#         target_size = outputs_seg_masks[-1].shape[-2:]
-#         align_corners = (target_size[0] % 2 == 1)
-#         return [
-#             {"pred_logits": a,
-#              "pred_masks": F.interpolate(b, size=target_size, mode="bilinear", align_corners=align_corners),
-#              "pixel_feature": F.interpolate(c, size=target_size, mode="bilinear", align_corners=align_corners), }
-#             for a, b, c in zip(outputs_class[:-1], outputs_seg_masks[:-1], outputs_pixel_feature[:-1])
-#         ]
+        
