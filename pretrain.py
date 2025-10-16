@@ -14,7 +14,7 @@ import yaml
 from monai.data import decollate_batch
 from torch.autograd import Variable
 from torch.utils.tensorboard import SummaryWriter
-from loss.dice import EDiceLoss_Val, memory_Loss  # 'No ET... for this patient' 来自于
+from loss.dice import EDiceLoss_Val, memory_Loss 
 
 from dataset.brats import get_datasets_train_rf_forpretrain, get_datasets_brats20_rf
 from loss import EDiceLoss
@@ -83,13 +83,13 @@ def main(args):
     ngpus = torch.cuda.device_count()
     print(f"Working with {ngpus} GPUs")
 
-    args.save_folder_1 = pathlib.Path(f"./your path/{args.exp_name}/model_1")
-    args.save_folder_1.mkdir(parents=True, exist_ok=True)
-    args.seg_folder_1 = args.save_folder_1 / "segs"
+    args.save_folder = pathlib.Path(f"./your path/{args.exp_name}/model_1")
+    args.save_folder.mkdir(parents=True, exist_ok=True)
+    args.seg_folder_1 = args.save_folder / "segs"
     args.seg_folder_1.mkdir(parents=True, exist_ok=True)
-    args.save_folder_1 = args.save_folder_1.resolve()
+    args.save_folder = args.save_folder.resolve()
     save_args_1(args)
-    t_writer_1 = SummaryWriter(str(args.save_folder_1))
+    t_writer_1 = SummaryWriter(str(args.save_folder))
     CC_modalities = 4
     CC_classes = 3
     model_1 = Unet_missing(input_shape=[128, 128, 128], pre_train=True, mask_ratio=args.mask_ratio, mdp=args.mdp,
@@ -109,7 +109,7 @@ def main(args):
 
     model_1 = model_1.cuda()
 
-    model_file = args.save_folder_1 / "model.txt"
+    model_file = args.save_folder / "model.txt"
     with model_file.open("w") as f:
         print(model_1, file=f)
 
@@ -236,7 +236,7 @@ def main(args):
                         optimizer=optimizer.state_dict(),
                         scheduler=scheduler.state_dict(),
                     ),
-                    save_folder=args.save_folder_1, )
+                    save_folder=args.save_folder, )
 
         except KeyboardInterrupt:
             print("Stopping training loop, doing benchmark")
@@ -246,5 +246,6 @@ def main(args):
 if __name__ == '__main__':
     arguments = parser.parse_args()
     main(arguments)
+
 
 
