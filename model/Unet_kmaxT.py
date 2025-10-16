@@ -10,7 +10,6 @@ from torch.autograd import Variable
 from torch.nn import Linear, Dropout
 
 from model.KamxT import kMaXTransformerLayer
-# from model.KamxT_new_changePixFeature import kMaXTransformerLayer
 from model.kmax_pixel_decoder import ConvBN, get_activation
 
 class Mlp(nn.Module):
@@ -404,9 +403,7 @@ def MaskEmbeeding2(B, mask_ratio=0.75, raw_input=None, patch_size=16, mdp=0, mas
                                                                     patch_shape=patch_shape)
 
     decoder_embeeding = torch.zeros((B, raw_input.shape[1], patch_size, patch_size, patch_size)).to(raw_input.device)
-    # decoder_embeeding :[2048 16 16 16] 2048个patch,每个patch大小为[16 16 16]
     decoder_embeeding[:, sample_index, :, :, :] = raw_input[:, sample_index, :, :, :]
-    # 依采样设置为1
     decoder_embeeding = decoder_embeeding.reshape(B, 4, D // patch_size, H // patch_size, W // patch_size, patch_size,
                                                   patch_size, patch_size).permute(0, 1, 2, 5, 3, 6, 4, 7)
 
@@ -485,3 +482,4 @@ class Unet_missing(nn.Module):
             return uout, mask.sum((2, 3, 4)), style, content
         else:
             return uout
+
