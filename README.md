@@ -1,4 +1,4 @@
-# _MCPL
+# MCPL
 ## Multimodal Contrastive Prototype Learning for Resilient Brain Tumor Segmentation with Missing Modalities,J-BHI.
 
 >Multimodal fusion is an effective solution for holistic brain tumor diagnosis, however, it faces challenge under missing modalities.
