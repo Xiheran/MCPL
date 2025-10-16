@@ -1,39 +1,14 @@
-"""
-Copyright (2023) Bytedance Ltd. and/or its affiliates
-
-Licensed under the Apache License, Version 2.0 (the "License"); 
-you may not use this file except in compliance with the License. 
-You may obtain a copy of the License at 
-
-    http://www.apache.org/licenses/LICENSE-2.0 
-
-Unless required by applicable law or agreed to in writing, software 
-distributed under the License is distributed on an "AS IS" BASIS, 
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
-See the License for the specific language governing permissions and 
-limitations under the License.
-
-Reference: https://github.com/google-research/deeplab2/blob/main/model/pixel_decoder/kmax.py
-"""
-
 from typing import Dict, List
-
 import torch
 from torch import nn
 from torch.nn import functional as F
-
 from timm.models.layers import DropPath
-# from timm.models.layers import trunc_normal_tf_ as trunc_normal_
-# I changed to
 from timm.models.layers import trunc_normal_
-
 from detectron2.config import configurable
 from detectron2.layers import ShapeSpec
 from detectron2.modeling import SEM_SEG_HEADS_REGISTRY
 from torch.cuda.amp import autocast
-
 from .convnext import LayerNorm
-
 import math
 
 
@@ -129,7 +104,6 @@ class RelativePositionalEncoding(nn.Module):
                                                                                            self.key_length, self.depth)
 
 
-# https://github.com/google-research/deeplab2/blob/main/model/layers/axial_layers.py#L36
 class AxialAttention(nn.Module):
     def __init__(self, in_planes, query_shape=56, total_key_depth=512, total_value_depth=1024, num_heads=8):
         assert (total_key_depth % num_heads == 0) and (total_value_depth % num_heads == 0)
@@ -189,7 +163,6 @@ class AxialAttention(nn.Module):
         return retrieved_output
 
 
-# https://github.com/google-research/deeplab2/blob/main/model/layers/axial_layers.py#L316
 class AxialAttention2D(nn.Module):
     def __init__(self, in_planes, query_shape=[56, 56], filters=512, key_expansion=1, value_expansion=2, num_heads=8):
         super().__init__()
@@ -225,7 +198,6 @@ class AxialAttention2D(nn.Module):
         return x
 
 
-# https://github.com/google-research/deeplab2/blob/main/model/layers/axial_blocks.py#L36
 class SingleBlock(nn.Module):
 
     def __init__(self, inplanes, filter_list, block_type, query_shape=[56, 56], key_expansion=1, value_expansion=2,
@@ -272,7 +244,6 @@ class SingleBlock(nn.Module):
         return x
 
 
-# https://github.com/google-research/deeplab2/blob/main/model/layers/axial_block_groups.py#L42
 class BlockGroup(nn.Module):
     def __init__(self, inplanes, base_filter, num_blocks, block_type, **kwargs):
         super().__init__()
@@ -297,7 +268,6 @@ class BlockGroup(nn.Module):
         return x
 
 
-# https://github.com/google-research/deeplab2/blob/7a01a7165e97b3325ad7ea9b6bcc02d67fecd07a/model/layers/resized_fuse.py#L31
 class ResizedFuse(nn.Module):
     def __init__(self, low_in_channels, high_in_channels, out_channels):
         super().__init__()
