@@ -16,20 +16,20 @@ k15="test20_t2fl_visual"
 
 checkpoint="/home/.../model.pth.tar"
 checkpoint=CUDA_VISIBLE_DEVICES=0 python3 test.py  --checkpoint ${checkpoint} --exp_name ${k5}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 1 2 --checkpoint ${checkpoint} --exp_name ${k1}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 1 2 3 --checkpoint ${checkpoint} --exp_name ${k2}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 2 3 --checkpoint ${checkpoint} --exp_name ${k3}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 1 3 --checkpoint ${checkpoint} --exp_name ${k4}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 1 --checkpoint ${checkpoint} --exp_name ${k6}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 --checkpoint ${checkpoint} --exp_name ${k7}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 2 --checkpoint ${checkpoint} --exp_name ${k8}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 3 --checkpoint ${checkpoint} --exp_name ${k9}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 1 --checkpoint ${checkpoint} --exp_name ${k10}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 2 --checkpoint ${checkpoint} --exp_name ${k11}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 0 3 --checkpoint ${checkpoint} --exp_name ${k12}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 1 2 --checkpoint ${checkpoint} --exp_name ${k13}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 1 3 --checkpoint ${checkpoint} --exp_name ${k14}
-CUDA_VISIBLE_DEVICES=0 python3 test_visual_20_smu_nii.py  --modal_list 2 3 --checkpoint ${checkpoint} --exp_name ${k15}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 0 1 2 --checkpoint ${checkpoint} --exp_name ${k1}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 1 2 3 --checkpoint ${checkpoint} --exp_name ${k2}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 0 2 3 --checkpoint ${checkpoint} --exp_name ${k3}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 0 1 3 --checkpoint ${checkpoint} --exp_name ${k4}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 1 --checkpoint ${checkpoint} --exp_name ${k6}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 0 --checkpoint ${checkpoint} --exp_name ${k7}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 2 --checkpoint ${checkpoint} --exp_name ${k8}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 3 --checkpoint ${checkpoint} --exp_name ${k9}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 0 1 --checkpoint ${checkpoint} --exp_name ${k10}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 0 2 --checkpoint ${checkpoint} --exp_name ${k11}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 0 3 --checkpoint ${checkpoint} --exp_name ${k12}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 1 2 --checkpoint ${checkpoint} --exp_name ${k13}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 1 3 --checkpoint ${checkpoint} --exp_name ${k14}
+CUDA_VISIBLE_DEVICES=0 python3 test.py  --modal_list 2 3 --checkpoint ${checkpoint} --exp_name ${k15}
 
 
 
