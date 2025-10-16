@@ -94,14 +94,14 @@ def main(args):
     print(f"Working with {ngpus} GPUs")
     print(args.checkpoint)
     # args.checkpoint = args.checkpoint[:-1]
-    args.save_folder_1 = pathlib.Path(f"Reslut_try/_250922/{args.exp_name}/model_1")
-    args.save_folder_1.mkdir(parents=True, exist_ok=True)
-    args.seg_folder_1 = args.save_folder_1 / "segs"
-    args.seg_folder_1.mkdir(parents=True, exist_ok=True)
-    args.save_folder_1 = args.save_folder_1.resolve()  # 表示将路径或路径片段的序列解析为绝对路径
+    args.save_folder = pathlib.Path(f"Reslut_try/_250922/{args.exp_name}/model_1")
+    args.save_folder.mkdir(parents=True, exist_ok=True)
+    args.seg_folder = args.save_folder / "segs"
+    args.seg_folder.mkdir(parents=True, exist_ok=True)
+    args.save_folder = args.save_folder.resolve() 
     save_args_1(args)
 
-    t_writer_1 = SummaryWriter(str(args.save_folder_1))
+    t_writer_1 = SummaryWriter(str(args.save_folder))
     # args.checkpoint_folder = pathlib.Path(f"runs_Kmax_inv/{args.exp_name}/model_1")
 
     print(args)
@@ -109,7 +109,7 @@ def main(args):
     if args.modal_list:
         args.modal_list = [int(l) for l in args.modal_list]  # Masked modal list
     else:
-        args.modal_list = []  # 无 Masked modal
+        args.modal_list = []  
 
     # Create model
 
@@ -118,7 +118,7 @@ def main(args):
 
     temp_model = model_1
     temp_model.eval()
-    args.mae_imp = False  # 从MAE检查点恢复 ?  No
+    args.mae_imp = False  
     if args.mae_imp:
         args.ccs = "./runs/model_1/model_1model_best_599.pth.tar"
         reload_ckpt_bis(args.ccs, model_1, temp_model)
@@ -134,7 +134,7 @@ def main(args):
     model_1 = nn.DataParallel(model_1)
     model_1 = model_1.cuda()
 
-    model_file = args.save_folder_1 / "model.txt"
+    model_file = args.save_folder / "model.txt"
     with model_file.open("w") as f:
         print(model_1, file=f)
 
@@ -184,17 +184,17 @@ def main(args):
 
     mode = "train" if model_1.training else "val"
     batch_per_epoch = len(train_loader)
-    progress = ProgressMeter(  # 进度尺
+    progress = ProgressMeter(  
         batch_per_epoch,
         [batch_time, data_time, losses_],
-        prefix=f"{mode} Epoch: [{epoch}]")  # 前缀
+        prefix=f"{mode} Epoch: [{epoch}]") 
 
     end = time.perf_counter()
     metrics = []
 
 
     validation_loss_1, validation_dice = step(val_loader, model_1, temp_model, criterian_val, metric, epoch, t_writer_1,
-                                              save_folder=args.save_folder_1,
+                                              save_folder=args.save_folder,
                                               patients_perf=patients_perf, args=args)
     generate_segmentations_monai(val_loader, model_1, t_writer_1, args)
     t_writer_1.add_scalar(f"SummaryLoss", validation_loss_1, epoch)
@@ -241,17 +241,7 @@ def step(data_loader, model, model_temp, criterion: EDiceLoss_Val, metric, epoch
                     val_data["label"].cuda(),
                 )
                 val_outputs = inference(val_inputs, model)  # [1 3 136 174 138]
-            else:
-                val_inputs, val_labels = (
-                    val_data["image"].cuda(),
-                    val_data["label"].cuda(),
-                )
-                syn_result = inference(val_inputs, model_temp)
-                syn_result = syn_result.cuda()
-                val_outputs = inference(syn_result, model)
-
             val_outputs_1 = [post_trans(i) for i in decollate_batch(val_outputs)]
-
             segs = val_outputs
             targets = val_labels
             loss_ = criterion(segs, targets)
@@ -341,5 +331,6 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = arguments.devices
     main(arguments)
+
 
 
