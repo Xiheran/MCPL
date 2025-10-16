@@ -18,8 +18,8 @@ from torch.nn import functional as F
 import csv
 
 from dataset.brats import get_datasets_train_rf_withvalid
-from loss import EDiceLoss  # 'No ET... for this patient' 来自于
-from loss.dice import EDiceLoss_Val, memory_Loss  # 'No ET... for this patient' 来自于
+from loss import EDiceLoss  
+from loss.dice import EDiceLoss_Val, memory_Loss  
 from utils import AverageMeter, ProgressMeter, save_checkpoint, reload_ckpt_bis, \
     count_parameters, save_metrics, save_args_1, inference, post_trans, dice_metric, \
     dice_metric_batch
@@ -42,7 +42,7 @@ parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='man
 
 parser.add_argument('--patch_shape', default=128, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('--epochs', default=600, type=int, metavar='N', help='number of total epochs to run')
+parser.add_argument('--epochs', default=500, type=int, metavar='N', help='number of total epochs to run')
 parser.add_argument('-b', '--batch-size', default=2, type=int, metavar='N', help='mini-batch size (default: 1)')
 parser.add_argument('--lr', '--learning-rate', default=3e-4, type=float, metavar='LR', help='initial learning rate',
                     dest='lr')
@@ -60,7 +60,7 @@ parser.add_argument('--model_type', type=str, default='cnnnet', choices=['vtnet'
 parser.add_argument('--feature_level', default=2, type=int, metavar='N', help='mini-batch size (default: 1)')
 
 parser.add_argument('--devices', default='0', type=str, help='Set the CUDA_VISIBLE_DEVICES env var from this string')
-parser.add_argument('--exp_name', default='retest_1_finetune2018_ClassContrast_875_599preModalContrast1task', type=str,
+parser.add_argument('--exp_name', default='you name', type=str,
                     help='exp name')
 
 parser.add_argument('--val', default=50, type=int, help="how often to perform validation step")
@@ -139,15 +139,14 @@ def main(args):
     ngpus = torch.cuda.device_count()
     print(f"Working with {ngpus} GPUs")
 
-    # runs_Kmax/test4/model_1
-    args.save_folder_1 = pathlib.Path(f"trainSencondStep/{args.exp_name}/model_1")
-    args.save_folder_1.mkdir(parents=True, exist_ok=True)
-    args.seg_folder_1 = args.save_folder_1 / "segs"
+    args.save_folder = pathlib.Path(f"trainSencondStep/{args.exp_name}/model")
+    args.save_folder.mkdir(parents=True, exist_ok=True)
+    args.seg_folder_1 = args.save_folder / "segs"
     args.seg_folder_1.mkdir(parents=True, exist_ok=True)
-    args.save_folder_1 = args.save_folder_1.resolve()
+    args.save_folder = args.save_folder.resolve()
     save_args_1(args)
 
-    t_writer_1 = SummaryWriter(str(args.save_folder_1))
+    t_writer_1 = SummaryWriter(str(args.save_folder))
     print(args)
     CC_modalities = 4
     CC_classes = 3
@@ -161,7 +160,7 @@ def main(args):
     model_1 = nn.DataParallel(model_1)
     model_1 = model_1.cuda()
     model_1.module.raw_input = model_1.module.raw_input.cpu()
-    model_file = args.save_folder_1 / "model.txt"
+    model_file = args.save_folder / "model.txt"
     with model_file.open("w") as f:
         print(model_1, file=f)
 
@@ -393,7 +392,7 @@ def main(args):
                     total = 0
                     validation_loss_1, validation_dice = step(val_loader, model_1, args, criterian_val, metric, epoch,
                                                               t_writer_1,
-                                                              save_folder=args.save_folder_1,
+                                                              save_folder=args.save_folder,
                                                               patients_perf=patients_perf, mask_modal=[1],
                                                               # remove 1
                                                               patch_shape=args.patch_shape)
@@ -401,7 +400,7 @@ def main(args):
                     print(validation_dice)
                     validation_loss_1, validation_dice = step(val_loader, model_1, args, criterian_val, metric, epoch,
                                                               t_writer_1,
-                                                              save_folder=args.save_folder_1,
+                                                              save_folder=args.save_folder,
                                                               patients_perf=patients_perf, mask_modal=[1, 3],
                                                               # remove 1 3
                                                               patch_shape=args.patch_shape)
@@ -409,7 +408,7 @@ def main(args):
                     print(validation_dice)
                     validation_loss_1, validation_dice = step(val_loader, model_1, args, criterian_val, metric, epoch,
                                                               t_writer_1,
-                                                              save_folder=args.save_folder_1,
+                                                              save_folder=args.save_folder,
                                                               patients_perf=patients_perf, mask_modal=[0, 1, 3],
                                                               # remove 0 1 3
                                                               patch_shape=args.patch_shape)
@@ -417,7 +416,7 @@ def main(args):
                     print(validation_dice)
                     validation_loss_1, validation_dice = step(val_loader, model_1, args, criterian_val, metric, epoch,
                                                               t_writer_1,
-                                                              save_folder=args.save_folder_1,
+                                                              save_folder=args.save_folder,
                                                               patients_perf=patients_perf, patch_shape=args.patch_shape)
 
                     total += validation_dice
@@ -438,42 +437,10 @@ def main(args):
                                 optimizer=optimizer.state_dict(),
                                 # scheduler=scheduler.state_dict(),
                             ),
-                            save_folder=args.save_folder_1, )
+                            save_folder=args.save_folder, )
 
                     ts = time.perf_counter()
                     print(f"Val epoch done in {ts - te} s")
-                if (epoch + 1) % 50 == 0 and epoch > 300:
-                    model_dict = model_1.state_dict()
-                    save_checkpoint(
-                        dict(
-                            epoch=epoch,
-                            state_dict=model_dict,
-                            optimizer=optimizer.state_dict(),
-                            # scheduler=scheduler.state_dict(),
-                        ),
-                        save_folder=args.save_folder_1, )
-            else:
-                if (epoch + 1) % 20 == 0:
-                    model_dict = model_1.state_dict()
-                    save_checkpoint(
-                        dict(
-                            epoch=epoch,
-                            state_dict=model_dict,
-                            optimizer=optimizer.state_dict(),
-                            # scheduler=scheduler.state_dict(),
-                        ),
-                        save_folder=args.save_folder_1, )
-                elif losses_.avg < best_loss:
-                    best_loss = losses_.avg
-                    model_dict = model_1.state_dict()
-                    save_checkpoint(
-                        dict(
-                            epoch=1000,
-                            state_dict=model_dict,
-                            optimizer=optimizer.state_dict(),
-                            # scheduler=scheduler.state_dict(),
-                        ),
-                        save_folder=args.save_folder_1, )
 
         except KeyboardInterrupt:
             print("Stopping training loop, doing benchmark")
@@ -496,10 +463,7 @@ def step(data_loader, model, args, criterion: EDiceLoss_Val, metric, epoch, writ
 
     end = time.perf_counter()
     metrics = []
-    if args.model_type == "vtnet":
-        model.module.swin_unet.mask_modal = mask_modal
-    else:
-        model.module.mask_modal = mask_modal
+    model.module.mask_modal = mask_modal
     for i, val_data in enumerate(data_loader):
         # measure data loading time
         data_time.update(time.perf_counter() - end)
@@ -557,5 +521,6 @@ if __name__ == '__main__':
     arguments = parser.parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = arguments.devices
     main(arguments)
+
 
 
