@@ -26,7 +26,7 @@ Comprehensive experiments on the BraTS2018 and BraTS2020 datasets demonstrate th
 > timm 0.4.9
 
 ### Model Download:
-     <a href="https://pan.baidu.com/s/1PZTVbzIoXzloEXTTJlo4Ng"> model</a>
+> <a href="https://pan.baidu.com/s/1PZTVbzIoXzloEXTTJlo4Ng"> model</a>
      code: 2133
 ### Dataset: 
 > * <a href="https://www.kaggle.com/datasets/sanglequang/brats2018"> Brats 2018</a>
