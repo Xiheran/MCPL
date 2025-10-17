@@ -40,6 +40,8 @@ Comprehensive experiments on the BraTS2018 and BraTS2020 datasets demonstrate th
 >Finetune: `python finetune.py`
 > 
 > Test: `python test.py` via test.sh
+> Brats 2018
+<img width="865" height="307" alt="image" src="https://github.com/user-attachments/assets/6b322806-7695-4aa0-988a-ade2b8e5edb4" />
 
 ### Visualization:
 >Pretrain Visualization
@@ -50,7 +52,6 @@ Comprehensive experiments on the BraTS2018 and BraTS2020 datasets demonstrate th
 >
 ><img src="img3.png" width="600">
 
-<img width="865" height="307" alt="image" src="https://github.com/user-attachments/assets/6b322806-7695-4aa0-988a-ade2b8e5edb4" />
 
 
 ### Citation
