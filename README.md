@@ -43,7 +43,7 @@ Comprehensive experiments on the BraTS2018 and BraTS2020 datasets demonstrate th
 >
 >
                                                   Brats 2020
-<img width="865" height="271" alt="image" src="https://github.com/user-attachments/assets/fc641d52-ce41-481d-bc32-5312c8db662a" />
+<img width="865" height="307" alt="image" src="https://github.com/user-attachments/assets/bb704c36-11ad-444f-a70a-3205c7f72604" />
 
 ### Visualization:
 >Pretrain Visualization
